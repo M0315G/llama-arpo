@@ -6,18 +6,21 @@ from pathlib import Path
 
 @dataclasses.dataclass
 class ExperimentConfig:
-    seed: int = 42
+    seed: int = 23
     device_index: int = 0  # Denotes the GPU to use, in case of multi-GPU system change the value.
     model_name: str = "meta-llama/Llama-3.2-1B-Instruct"
+    # tokenizer: str = "meta-llama/Llama-3.2-1B-Instruct"
+    # model_name: str = "bartowski/Llama-3.2-1B-Instruct-GGUF"
+    # filename: str = "Llama-3.2-1B-Instruct-f16.gguf"
 
     # Training h-params
-    batch_size: int = 16
+    batch_size: int = 4
     learning_rate: int = 5e-6
     kl_weight: float = 0.01
     # The boundary for maximum update in one go, this is used to clip the updates.
     clip_eps: float = 0.2
     # No of responses to sample for each input.
-    group_size: int = 12
+    group_size: int = 8
     # This denotes how many samples we'll gather while training the policy once:
     # i.e. we'll do 2 episodes of `batch_size` each thus gathering 2*16 = 32 rollouts before updating the policy (model)
     num_episodes_per_step: int = 2

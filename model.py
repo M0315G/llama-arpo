@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F
+import logging
 from transformers import (
     AutoTokenizer,
     PreTrainedTokenizer,
@@ -7,25 +8,35 @@ from transformers import (
 )
 
 
+logger = logging.getLogger(__name__)
+
+
 def load_model(
     model_name_or_path: str,
+    # filename: str,
+    # tokenizer_name_or_path: str,
     use_bfloat16: bool = True,
     device_map: ... = None
 ) -> tuple[LlamaForCausalLM, PreTrainedTokenizer]:
+    logger.debug("Loading model tokenizer from hub.")
     tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+    logger.info("Loaded tokenizer.")
     tokenizer.pad_token = tokenizer.eos_token
+    logger.debug("Loading model from hub.")
     model = LlamaForCausalLM.from_pretrained(
         model_name_or_path,
-        torch_type=torch.bfloat16 if use_bfloat16 else "auto",
-        attn_implementation="flash_attention_2",
+        torch_dtype=torch.bfloat16 if use_bfloat16 else "auto",
+        # attn_implementation="flash_attention_2",
         device_map=device_map,
     )
+    logger.info("Loaded model.")
     return model, tokenizer
 
 
 def sequence_log_probs_from_logits(
     logits: torch.tensor, output_ids: torch.tensor
 ) -> torch.Tensor:
+    logger.debug("Computing log probs from logits.")
     # logits:        [B, seq_len, vocab_size]
     # output_ids:    [B, seq_len]
 
@@ -48,7 +59,7 @@ def get_sequence_log_probs(
     sequence_ids: torch.Tensor,
     attention_mask: torch.Tensor,
 ) -> torch.Tensor :
-    
+    logger.debug("Generating log probabilities for the output sequence.")
     position_ids = attention_mask.long().cumsum(dim=-1) - 1
     # position_ids.masked_fill_(mask=(attention_mask == 0), value=1)
     output = model.forward(

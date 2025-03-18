@@ -1,2 +1,4 @@
 output/
 runs/
+*.log
+__pycache__/

@@ -1,12 +1,17 @@
 from typing import Optional, List
 from dataclasses import dataclass, fields
+import logging
 import torch
 import torch.nn.functional as F
+
+
+logger = logging.getLogger(__name__)
 
 
 def zero_pad_sequences(
     sequences: list[torch.Tensor], side: str = "left"
 ) -> torch.Tensor:
+    logger.debug(f"Zero Padding sequences on the {side} side")
     assert side in ("left", "right")
     max_len = max(seq.size(0) for seq in sequences)
     padded_sequences = []
@@ -79,6 +84,7 @@ class ReplayBuffer:
         kl: torch.Tensor,
         device: ...,
     ) -> None:
+        logger.debug(f"Adding {len(sequences)} elements to replay buffer")
         for seq, lp, lpr, ret, adv, attn, act, k in zip(
             sequences,
             action_log_probs,
@@ -108,6 +114,7 @@ class ReplayBuffer:
                 self.items = self.items[samples_to_remove:]
 
     def clear(self) -> None:
+        logger.debug("Cleaning Replay buffer")
         self.items.clear()
 
     def __len__(self) -> int:

@@ -1,8 +1,11 @@
 from typing import Optional
 import torch
 import torch.nn as nn
-
+import logging
 import buffer
+
+
+logger = logging.getLogger(__name__)
 
 
 def approx_kl_divergence(
@@ -13,6 +16,7 @@ def approx_kl_divergence(
     """
     Monte-Carlo approximation of KL divergence, k3 estimator, see: http://joschu.net/blog/kl-approx.html
     """
+    logger.debug("Estimating KL Divergence loss")
     log_ratio = log_probs_ref.float() - log_probs.float()
     if action_mask is not None:
         log_ratio = log_ratio * action_mask
@@ -35,6 +39,7 @@ class GRPOLoss(nn.Module):
         super().__init__()
         self.clip_eps = clip_eps
         self.kl_weight = kl_weight
+        logger.debug("GRPO Loss initialized")
 
     def forward(
         self,
@@ -57,7 +62,11 @@ class GRPOLoss(nn.Module):
         # We first take the ratio of the current polcy with old policy and multiply it with the advantages,
         # simultaneously use the clip to make sure the policy change is not too drastic.
         # Finally, take the min of both and add the kl penalty to it and compute it over all the examples.
+        logger.debug("Computing loss.")
+        logger.debug(f"log_probs: {torch.isfinite(log_probs).all()} and old_log_probs: {torch.isfinite(old_log_probs).all()}")
         ratio = (log_probs - old_log_probs).exp()
+        logger.debug(f"Ratio: {ratio.min(), ratio.max()}")
+        logger.debug(f"KL: {kl.min(), kl.max()}")
         surr1 = ratio * advantages
         surr2 = ratio.clamp(1 - self.clip_eps, 1 + self.clip_eps) * advantages
         loss = -torch.min(surr1, surr2) + self.kl_weight * kl
